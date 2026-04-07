@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(/usr/local/bin/node -v)",
+      "Bash(/usr/local/bin/npm -v)",
+      "Bash(export PATH=\"/usr/local/bin:$PATH\")",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)"
+    ]
+  }
+}
