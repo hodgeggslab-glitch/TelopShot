@@ -13,6 +13,7 @@ export type TelopStyle = {
   strokeColor: string;
   strokeWidth: number;
   shadow: boolean;
+  backgroundColor?: string | null;
   align: CanvasTextAlign;
   preset: TelopPreset;
 };
@@ -81,6 +82,14 @@ export type HighlightConditions = {
   diversity: "standard" | "wide";
 };
 
+export type ShotFilterType = "telop" | "person-count";
+
+export type ShotFilterCondition = {
+  type: ShotFilterType;
+  value: string;
+  label: string;
+};
+
 export type CandidateGroup = {
   id: string;
   label: string;
@@ -115,6 +124,29 @@ export type ScenePeakSegment = {
   rangeStart: number;
   rangeEnd: number;
   thumbnailShot: ScreenshotCandidate;
+};
+
+export type SnsLayoutType = "single" | "two-horizontal" | "two-vertical" | "four-grid";
+
+export type SnsSlide = {
+  id: string;
+  headerLine1?: string;
+  headerLine2?: string;
+  headerLine1Color?: string;
+  headerLine2Color?: string;
+  layout: SnsLayoutType;
+  slots: (string | null)[];
+};
+
+export type SnsPlatform = "youtube" | "instagram" | "tiktok" | "x";
+
+export type SnsTemplate = {
+  id: string;
+  projectId?: string | null;
+  name: string;
+  platform: SnsPlatform;
+  slides: SnsSlide[];
+  createdAt: string;
 };
 
 export type SavedThread = {

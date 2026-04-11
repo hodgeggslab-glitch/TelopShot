@@ -275,7 +275,7 @@ function getShotImageTransform(shot: ScreenshotCandidate) {
   return {
     scale: Math.max(shot.imageScale ?? 1, 1),
     offsetX: clamp(shot.imageOffsetX ?? 0, -1, 1),
-    offsetY: clamp(shot.imageOffsetY ?? 0, -1, 1)
+    offsetY: clamp(shot.imageOffsetY ?? 0, -3, 3)
   };
 }
 
@@ -695,6 +695,30 @@ function drawTelopOnCanvas(
     const lineHeightPx = telop.fontSize * telop.lineHeight;
     const totalHeight = lines.length * lineHeightPx;
     const startY = y - totalHeight / 2 + lineHeightPx / 2;
+
+    // 背景色の描画
+    if (telop.backgroundColor) {
+      const paddingX = telop.fontSize * 0.2;
+      const paddingY = telop.fontSize * 0.25;
+      lines.forEach((line, index) => {
+        const lineY = startY + index * lineHeightPx;
+        const lineWidth = Math.min(context.measureText(line).width, maxWidth);
+        let bgX: number;
+        if (telop.align === "center") bgX = x - lineWidth / 2;
+        else if (telop.align === "right") bgX = x - lineWidth;
+        else bgX = x;
+        context.save();
+        context.globalAlpha = 0.3;
+        context.fillStyle = telop.backgroundColor!;
+        context.fillRect(
+          bgX - paddingX,
+          lineY - lineHeightPx / 2 - paddingY / 2,
+          lineWidth + paddingX * 2,
+          lineHeightPx + paddingY
+        );
+        context.restore();
+      });
+    }
 
     lines.forEach((line, index) => {
       const lineY = startY + index * lineHeightPx;
