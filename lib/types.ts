@@ -27,7 +27,7 @@ export type SavedTelopStylePreset = {
   name: string;
   style: Pick<
     TelopStyle,
-    "maxWidth" | "fontSize" | "strokeWidth" | "color" | "strokeColor" | "fontFamily" | "fontWeight" | "lineHeight"
+    "maxWidth" | "fontSize" | "strokeWidth" | "color" | "strokeColor" | "fontFamily" | "fontWeight" | "lineHeight" | "backgroundColor"
   >;
   createdAt: string;
 };

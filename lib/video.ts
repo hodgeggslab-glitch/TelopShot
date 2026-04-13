@@ -698,8 +698,8 @@ function drawTelopOnCanvas(
 
     // 背景色の描画
     if (telop.backgroundColor) {
-      const paddingX = telop.fontSize * 0.2;
-      const paddingY = telop.fontSize * 0.25;
+      const paddingX = telop.fontSize * 0.1;
+      const paddingY = telop.fontSize * 0.125;
       lines.forEach((line, index) => {
         const lineY = startY + index * lineHeightPx;
         const lineWidth = Math.min(context.measureText(line).width, maxWidth);

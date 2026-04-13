@@ -106,9 +106,31 @@ import {
 } from "@/lib/video";
 
 const FONT_OPTIONS = [
+  // ゴシック系
   { label: "ゴシック", value: "'Hiragino Sans', 'Noto Sans JP', sans-serif" },
-  { label: "明朝", value: "'Hiragino Mincho ProN', 'Yu Mincho', serif" },
-  { label: "丸ゴシック", value: "'Hiragino Maru Gothic ProN', 'Noto Sans JP', sans-serif" }
+  { label: "Noto Sans JP", value: "'Noto Sans JP', sans-serif" },
+  { label: "Zen角ゴシック", value: "'Zen Kaku Gothic New', sans-serif" },
+  { label: "M PLUS 1p", value: "'M PLUS 1p', sans-serif" },
+  { label: "さわらびゴシック", value: "'Sawarabi Gothic', sans-serif" },
+  // 明朝系
+  { label: "明朝", value: "'Hiragino Mincho ProN', 'Noto Serif JP', serif" },
+  { label: "Noto Serif JP", value: "'Noto Serif JP', serif" },
+  { label: "Zen明朝", value: "'Zen Old Mincho', serif" },
+  { label: "さわらび明朝", value: "'Sawarabi Mincho', serif" },
+  // 丸ゴシック系
+  { label: "丸ゴシック", value: "'Hiragino Maru Gothic ProN', 'M PLUS Rounded 1c', sans-serif" },
+  { label: "M PLUS Rounded", value: "'M PLUS Rounded 1c', sans-serif" },
+  { label: "Zen丸ゴシック", value: "'Zen Maru Gothic', sans-serif" },
+  { label: "コスギ丸", value: "'Kosugi Maru', sans-serif" },
+  // 手書き・デザイン系
+  { label: "クレー", value: "'Klee One', cursive" },
+  { label: "はちまるポップ", value: "'Hachi Maru Pop', cursive" },
+  { label: "油性マジック", value: "'Yusei Magic', sans-serif" },
+  // インパクト・装飾系
+  { label: "デラゴシック", value: "'Dela Gothic One', cursive" },
+  { label: "レゲエ", value: "'Reggae One', cursive" },
+  { label: "ロックンロール", value: "'RocknRoll One', sans-serif" },
+  { label: "トレイン", value: "'Train One', cursive" }
 ] as const;
 
 function getFontOptionLabel(fontFamily: string) {
@@ -254,8 +276,8 @@ function PreviewCanvas({
         const startY = y - totalHeight / 2 + lineHeightPx / 2;
 
         if (telop.backgroundColor) {
-          const paddingX = telop.fontSize * 0.2;
-          const paddingY = telop.fontSize * 0.25;
+          const paddingX = telop.fontSize * 0.1;
+          const paddingY = telop.fontSize * 0.125;
           for (let index = 0; index < lines.length; index += 1) {
             const lineY = startY + index * lineHeightPx;
             const lineWidth = Math.min(context.measureText(lines[index]).width, maxWidth);
@@ -296,6 +318,10 @@ function PreviewCanvas({
     if (overlayImage && shot.overlayImageDataUrl) {
       overlayImage.onload = draw;
       overlayImage.src = shot.overlayImageDataUrl;
+    }
+    // 画像がキャッシュ済みの場合は即座に描画
+    if (image.complete && image.naturalWidth > 0) {
+      draw();
     }
   }, [shot, telops]);
 
@@ -664,8 +690,11 @@ export function VideoThreadStudio() {
   const [shotFilterValue, setShotFilterValue] = useState<string>("telop-no");
   const [isFilteringShots, setIsFilteringShots] = useState(false);
   const [shotReplacePickerOpen, setShotReplacePickerOpen] = useState(false);
+  const [shotResetAllConfirmOpen, setShotResetAllConfirmOpen] = useState(false);
+  const [styleDetailTarget, setStyleDetailTarget] = useState<SavedTelopStylePreset | null>(null);
   const [replaceNearbyShots, setReplaceNearbyShots] = useState<ScreenshotCandidate[]>([]);
   const [isLoadingReplaceNearby, setIsLoadingReplaceNearby] = useState(false);
+  const [replaceVideoTime, setReplaceVideoTime] = useState(0);
   const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
   const [status, setStatus] = useState("動画を読み込むと、見どころのスクリーンショットを自動で20件選出します。");
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -1169,7 +1198,7 @@ export function VideoThreadStudio() {
 
   function resetEditingTelop() {
     if (!selectedEditingTelop) return;
-    updateEditingShotTelop(defaultTelop);
+    updateEditingShotTelop({ ...defaultTelop, backgroundColor: null });
     setTelopResetConfirmOpen(false);
   }
 
@@ -1212,7 +1241,8 @@ export function VideoThreadStudio() {
         lineHeight: selectedEditingTelop.lineHeight,
         strokeWidth: selectedEditingTelop.strokeWidth,
         color: selectedEditingTelop.color,
-        strokeColor: selectedEditingTelop.strokeColor
+        strokeColor: selectedEditingTelop.strokeColor,
+        backgroundColor: selectedEditingTelop.backgroundColor ?? null
       }
     };
     await saveTelopStylePreset(nextPreset);
@@ -2392,6 +2422,15 @@ export function VideoThreadStudio() {
         </aside>
 
         <div className="space-y-5 px-4 py-4 md:px-6 xl:px-8">
+          {!currentProjectId ? (
+            <div className="flex min-h-[60vh] items-center justify-center">
+              <div className="text-center">
+                <Clapperboard className="mx-auto h-12 w-12 text-white/15" />
+                <p className="mt-4 text-lg font-semibold text-white/30">プロジェクトを選択してください</p>
+                <p className="mt-2 text-sm text-white/20">左のサイドバーからプロジェクトを作成するか、既存のプロジェクトを選択してください。</p>
+              </div>
+            </div>
+          ) : (
           <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,680px)_minmax(0,1fr)]">
             <Card className="w-full overflow-hidden">
               <CardContent className="p-5">
@@ -2896,16 +2935,11 @@ export function VideoThreadStudio() {
               {/* ── テロップショット ── */}
               <Separator className="mx-2" />
               <div className="space-y-3 px-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                      <Type className="h-5 w-5 text-primary" />
-                      テロップショット
-                    </CardTitle>
-                    <CardDescription className="mt-2">
-                      採用したショットだけを保持し、クリックで個別にテロップ編集します。
-                    </CardDescription>
-                  </div>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                    <Type className="h-5 w-5 text-primary" />
+                    テロップショット
+                  </CardTitle>
                   <Button
                     variant="outline"
                     type="button"
@@ -2956,6 +2990,11 @@ export function VideoThreadStudio() {
                   </div>
                 ) : null}
               </div>
+              {!selectedShots.length && (
+                <div className="mx-2 rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                  ショット一覧から追加するか、動画プレビューから手動でスクショを追加してください。
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3 px-2 xl:grid-cols-[repeat(auto-fill,minmax(180px,180px))]">
                 {selectedShots.map((shot, index) => (
                   <div
@@ -3024,25 +3063,16 @@ export function VideoThreadStudio() {
                           </div>
                         ) : null}
                       </div>
-                      <div className="space-y-1 p-2">
-                        <p className="text-sm font-semibold text-foreground">
-                          Shot {index + 1}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {formatTimestamp(shot.time)}
-                        </p>
-                      </div>
                     </button>
+                    <div className="p-2">
+                      <p className="text-[11px] text-muted-foreground">{formatTimestamp(shot.time)}</p>
+                    </div>
                   </div>
                 ))}
-                {!selectedShots.length && (
-                  <div className="col-span-full w-full rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-                    候補にチェックを入れるか、動画プレビューから手動でスクショを追加してください。
-                  </div>
-                )}
               </div>
             </section>
           </div>
+          )}
         </div>
       </section>
 
@@ -3653,9 +3683,107 @@ export function VideoThreadStudio() {
         </DialogContent>
       </Dialog>
 
+      {/* ── スタイル詳細ダイアログ ── */}
+      <Dialog open={Boolean(styleDetailTarget)} onOpenChange={(open) => { if (!open) setStyleDetailTarget(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>スタイルの詳細</DialogTitle>
+          </DialogHeader>
+          {styleDetailTarget && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">スタイル名</Label>
+                <Input
+                  value={styleDetailTarget.name}
+                  onChange={(e) => {
+                    const updated = { ...styleDetailTarget, name: e.target.value };
+                    setStyleDetailTarget(updated);
+                    setSavedTelopStyles((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+                    void saveTelopStylePreset(updated);
+                  }}
+                  className="bg-[#2b2d33] text-white placeholder:text-white/30 ring-inset focus-visible:ring-inset"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">詳細</Label>
+                <div className="space-y-1 rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/60">
+                  <div className="flex justify-between"><span>フォント</span><span className="text-white/80" style={{ fontFamily: styleDetailTarget.style.fontFamily }}>{getFontOptionLabel(styleDetailTarget.style.fontFamily ?? defaultTelop.fontFamily)}</span></div>
+                  <div className="flex justify-between"><span>文字サイズ</span><span className="text-white/80">{styleDetailTarget.style.fontSize ?? defaultTelop.fontSize}px</span></div>
+                  <div className="flex justify-between"><span>太さ</span><span className="text-white/80">{styleDetailTarget.style.fontWeight ?? defaultTelop.fontWeight}</span></div>
+                  <div className="flex justify-between"><span>行間</span><span className="text-white/80">{Number(styleDetailTarget.style.lineHeight ?? defaultTelop.lineHeight).toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>縁取り幅</span><span className="text-white/80">{styleDetailTarget.style.strokeWidth ?? defaultTelop.strokeWidth}px</span></div>
+                  <div className="flex justify-between"><span>最大幅</span><span className="text-white/80">{styleDetailTarget.style.maxWidth ?? defaultTelop.maxWidth}%</span></div>
+                  <div className="flex items-center justify-between"><span>文字色</span><span className="flex items-center gap-1.5 text-white/80"><span className="inline-block h-3 w-3 rounded-full border border-white/15" style={{ backgroundColor: styleDetailTarget.style.color ?? defaultTelop.color }} />{(styleDetailTarget.style.color ?? defaultTelop.color).toUpperCase()}</span></div>
+                  <div className="flex items-center justify-between"><span>縁取り色</span><span className="flex items-center gap-1.5 text-white/80"><span className="inline-block h-3 w-3 rounded-full border border-white/15" style={{ backgroundColor: styleDetailTarget.style.strokeColor ?? defaultTelop.strokeColor }} />{(styleDetailTarget.style.strokeColor ?? defaultTelop.strokeColor).toUpperCase()}</span></div>
+                  <div className="flex items-center justify-between"><span>背景色</span><span className="text-white/80">{styleDetailTarget.style.backgroundColor ? <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full border border-white/15" style={{ backgroundColor: styleDetailTarget.style.backgroundColor }} />{styleDetailTarget.style.backgroundColor.toUpperCase()}</span> : "なし"}</span></div>
+                </div>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full"
+                onClick={async () => {
+                  await deleteTelopStylePreset(styleDetailTarget.id);
+                  setSavedTelopStyles((prev) => prev.filter((s) => s.id !== styleDetailTarget.id));
+                  setStyleDetailTarget(null);
+                  setSnackbarMessage("スタイルを削除しました。");
+                }}
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                スタイルを削除
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── すべてリセット確認ダイアログ ── */}
+      <Dialog open={shotResetAllConfirmOpen} onOpenChange={setShotResetAllConfirmOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>すべてリセット</DialogTitle>
+            <DialogDescription>テロップ、拡大率、位置、追加画像をすべて初期状態に戻します。この操作は取り消せません。</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setShotResetAllConfirmOpen(false)}>キャンセル</Button>
+            <Button variant="destructive" size="sm" onClick={() => {
+              if (!editingShot) return;
+              updateShotInPools(editingShot.id, (shot) => ({
+                ...shot,
+                telops: [createTelopItem()],
+                selectedTelopId: null,
+                imageScale: 1,
+                imageOffsetX: 0,
+                imageOffsetY: 0,
+                overlayImageDataUrl: null,
+                overlayScale: 1,
+                overlayX: 50,
+                overlayY: 50,
+                overlayRotation: 0
+              }));
+              setIsTransformingOverlay(false);
+              setShotResetAllConfirmOpen(false);
+              setSnackbarMessage("すべての編集をリセットしました。");
+            }}>
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              リセット
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ── ショット変更ダイアログ ── */}
       <Dialog open={shotReplacePickerOpen} onOpenChange={(open) => { if (!open) setShotReplacePickerOpen(false); }}>
-        <DialogContent className="flex max-h-[calc(100vh-80px)] max-w-[700px] flex-col overflow-hidden">
+        <DialogContent
+          className="flex max-h-[calc(100vh-80px)] max-w-[700px] flex-col overflow-hidden"
+          onKeyDown={(e) => {
+            const v = snsPickerVideoRef.current;
+            if (!v) return;
+            if (e.key === "ArrowLeft") { e.preventDefault(); v.currentTime = Math.max(v.currentTime - 1, 0); }
+            if (e.key === "ArrowRight") { e.preventDefault(); v.currentTime = Math.min(v.currentTime + 1, v.duration || 0); }
+            if (e.key === " ") { e.preventDefault(); if (v.paused) v.play(); else v.pause(); }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>ショットを変更</DialogTitle>
             <DialogDescription>動画からキャプチャするか、候補から選んで差し替えます。</DialogDescription>
@@ -3670,6 +3798,7 @@ export function VideoThreadStudio() {
                     src={videoUrl}
                     className="aspect-video w-full object-contain"
                     playsInline
+                    onTimeUpdate={(e) => setReplaceVideoTime(e.currentTarget.currentTime)}
                   />
                 ) : (
                   <div className="flex aspect-video items-center justify-center text-sm text-muted-foreground">
@@ -3720,14 +3849,14 @@ export function VideoThreadStudio() {
                 </div>
                 <div className="space-y-2">
                   <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-                    <span className="text-xs text-muted-foreground">{formatTimestamp(snsPickerVideoRef.current?.currentTime ?? 0)}</span>
+                    <span className="text-xs text-muted-foreground">{formatTimestamp(replaceVideoTime)}</span>
                     <input
                       type="range"
                       min={0}
                       max={videoDuration || 0}
                       step={0.1}
-                      defaultValue={editingShot?.time ?? 0}
-                      onChange={(e) => { const v = snsPickerVideoRef.current; if (v) v.currentTime = Number(e.target.value); }}
+                      value={replaceVideoTime}
+                      onChange={(e) => { const v = snsPickerVideoRef.current; if (v) { v.currentTime = Number(e.target.value); setReplaceVideoTime(Number(e.target.value)); } }}
                       className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/20 accent-white [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
                     />
                     <span className="text-xs text-muted-foreground">{formatTimestamp(videoDuration)}</span>
@@ -4320,6 +4449,7 @@ export function VideoThreadStudio() {
                     <Button type="button" variant="outline" onClick={() => {
                       setShotReplacePickerOpen(true);
                       setReplaceNearbyShots([]);
+                      setReplaceVideoTime(editingShot?.time ?? 0);
                       if (editingShot) {
                         requestAnimationFrame(() => {
                           const v = snsPickerVideoRef.current;
@@ -4393,6 +4523,86 @@ export function VideoThreadStudio() {
                       </div>
                     </div>
                   ) : null}
+                </div>
+                {/* スタイルを適用 */}
+                <Separator />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <Palette className="h-4 w-4 text-primary" />
+                      テロップスタイル
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => { setTelopStyleName(`スタイル ${new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}`); setSaveTelopStyleDialogOpen(true); }}
+                      className="flex items-center gap-1.5 px-1 text-xs text-white/40 transition hover:text-white/70"
+                    >
+                      <Plus className="h-3 w-3" />
+                      今のスタイルを保存
+                    </button>
+                  </div>
+                {savedTelopStyles.length ? (
+                    <div className="grid max-h-[200px] grid-cols-2 gap-3 overflow-y-auto md:grid-cols-3 xl:grid-cols-4">
+                      {savedTelopStyles.map((preset) => (
+                        <div
+                          key={preset.id}
+                          className="group relative overflow-hidden border border-white/10 bg-white/5 text-left transition hover:bg-white/10"
+                        >
+                          <button
+                            type="button"
+                            className="relative block w-full text-left"
+                            onClick={() => {
+                              if (!selectedEditingTelop) return;
+                              updateEditingShotTelop({ ...preset.style });
+                              setSnackbarMessage(`「${preset.name}」を適用しました。`);
+                            }}
+                          >
+                            <div className="flex aspect-video items-end justify-center bg-neutral-700 px-3 pb-2">
+                              {(() => {
+                                const sw = Math.max((preset.style.strokeWidth ?? defaultTelop.strokeWidth) * 0.25, 0);
+                                const sc = preset.style.strokeColor ?? defaultTelop.strokeColor;
+                                const shadow = sw > 0
+                                  ? `${sw}px 0 0 ${sc}, -${sw}px 0 0 ${sc}, 0 ${sw}px 0 ${sc}, 0 -${sw}px 0 ${sc}, ${sw}px ${sw}px 0 ${sc}, -${sw}px ${sw}px 0 ${sc}, ${sw}px -${sw}px 0 ${sc}, -${sw}px -${sw}px 0 ${sc}`
+                                  : "none";
+                                const bgColor = preset.style.backgroundColor;
+                                return (
+                                  <span
+                                    className="relative text-center leading-tight"
+                                    style={{
+                                      fontFamily: preset.style.fontFamily ?? defaultTelop.fontFamily,
+                                      fontWeight: preset.style.fontWeight ?? defaultTelop.fontWeight,
+                                      fontSize: `${Math.min((preset.style.fontSize ?? defaultTelop.fontSize) * 0.3, 20)}px`,
+                                      lineHeight: preset.style.lineHeight ?? defaultTelop.lineHeight,
+                                      color: preset.style.color ?? defaultTelop.color,
+                                      textShadow: shadow,
+                                      ...(bgColor ? { backgroundColor: bgColor + "4D", padding: "2px 6px", borderRadius: "2px" } : {}),
+                                    }}
+                                  >
+                                    テロップ
+                                  </span>
+                                );
+                              })()}
+                            </div>
+                          </button>
+                          <div className="flex items-center justify-between gap-2 p-2">
+                            <span className="text-[10px] text-muted-foreground">{preset.name}</span>
+                            <button
+                              type="button"
+                              title="スタイルの詳細"
+                              onClick={() => setStyleDetailTarget(preset)}
+                              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-white/10 hover:text-white"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                    保存されたスタイルはありません
+                  </div>
+                )}
                 </div>
               </div>
               <div className="min-w-0">
@@ -4478,12 +4688,12 @@ export function VideoThreadStudio() {
                           value={selectedEditingTelop?.fontFamily ?? defaultTelop.fontFamily}
                           onValueChange={(value) => updateEditingShotTelop({ fontFamily: value })}
                         >
-                          <SelectTrigger className="h-10 w-full rounded-md bg-[#2b2d33] text-white focus:ring-inset">
+                          <SelectTrigger className="h-10 w-full rounded-md bg-[#2b2d33] text-white focus:ring-inset" style={{ fontFamily: selectedEditingTelop?.fontFamily ?? defaultTelop.fontFamily }}>
                             <SelectValue placeholder="フォントを選択" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="max-h-[300px]">
                             {FONT_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
+                              <SelectItem key={option.value} value={option.value} style={{ fontFamily: option.value }}>
                                 {option.label}
                               </SelectItem>
                             ))}
@@ -4602,18 +4812,13 @@ export function VideoThreadStudio() {
                       <Clipboard className="h-3.5 w-3.5" />
                       テロップを貼り付け
                     </Button>
-                    <Button type="button" variant="ghost" className="h-9 w-full justify-start gap-2 px-2 text-xs text-white/70 hover:text-white" onClick={() => { setTelopStyleName(`スタイル ${new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}`); setSaveTelopStyleDialogOpen(true); }}>
-                      <Save className="h-3.5 w-3.5" />
-                      スタイルを保存
-                    </Button>
-                    <Button type="button" variant="ghost" className="h-9 w-full justify-start gap-2 px-2 text-xs text-white/70 hover:text-white" onClick={() => setApplyTelopStyleDialogOpen(true)} disabled={!savedTelopStyles.length}>
-                      <Palette className="h-3.5 w-3.5" />
-                      スタイルを適用
-                    </Button>
-                    <Separator className="my-2" />
                     <Button type="button" variant="ghost" className="h-9 w-full justify-start gap-2 px-2 text-xs text-white/70 hover:text-white" onClick={() => void downloadSingleShot(editingShot)}>
                       <Download className="h-3.5 w-3.5" />
                       ダウンロード
+                    </Button>
+                    <Button type="button" variant="ghost" className="h-9 w-full justify-start gap-2 px-2 text-xs text-red-400/70 hover:text-red-400" onClick={() => setShotResetAllConfirmOpen(true)}>
+                      <RotateCw className="h-3.5 w-3.5" />
+                      すべてリセット
                     </Button>
                   </div>
                 </div>
