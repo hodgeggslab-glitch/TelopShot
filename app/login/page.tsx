@@ -38,7 +38,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="パスワード"
             autoFocus
-            className="h-11 w-full rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-sm text-white placeholder:text-white/38 outline-none focus:ring-2 focus:ring-inset focus:ring-white/30"
+            className="h-11 w-full rounded-xl border border-white/12 bg-[#2b2d33] px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none ring-inset focus-visible:ring-2 focus-visible:ring-ring"
           />
           {error && <p className="text-sm text-red-400">{error}</p>}
           <button
